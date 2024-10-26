@@ -68,6 +68,26 @@ unsigned long startTime = 0;
 // choosing blackwhite line
 bool lineColor = false; // true - black and false - white
 
+// helper function to read line based on color selection
+int readLine(){
+    if(linecolor){
+         return qtra.readLineBlack(sensors1);
+    }
+    else{
+         return qtra.readLineWhite(sensors1);
+    }
+}
+
+// helper function to check sensor threshold based on color
+bool isSensorOnLine(int sensorValue, int threshold) {
+    if(isBlackLine) {
+        return sensorValue > threshold;
+    } else {
+        return sensorValue < threshold;
+    }
+}
+
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -232,39 +252,71 @@ void maze()
     unsigned char found_right = 0;
 
     // Now read the sensors and check the intersection type.
-    qtra.readLineWhite(sensors1);
-    if (sensors1[7] < thr[7])
-    {
-      found_right = 1;
-      if (sensors1[1] < thr[1])
-      {
-        found_left = 1;
-      }
-    }
-    if (sensors1[0] < thr[0])
-    {
-      found_left = 1;
-      if (sensors1[6] < thr[6])
-      {
-        found_right = 1;
+    //qtra.readLineWhite(sensors1);
+    readLine();
 
-      }
-    }
+    // if (sensors1[7] < thr[7])
+    // {
+    //   found_right = 1;
+    //   if (sensors1[1] < thr[1])
+    //   {
+    //     found_left = 1;
+    //   }
+    // }
+    // if (sensors1[0] < thr[0])
+    // {
+    //   found_left = 1;
+    //   if (sensors1[6] < thr[6])
+    //   {
+    //     found_right = 1;
+
+    //   }
+    // }
+    
+        if (isSensorOnLine(sensors1[7], thr[7])) {
+            found_right = 1;
+            if (isSensorOnLine(sensors1[1], thr[1])) {
+                found_left = 1;
+            }
+        }
+        if (isSensorOnLine(sensors1[0], thr[0])) {
+            found_left = 1;
+            if (isSensorOnLine(sensors1[6], thr[6])) {
+                found_right = 1;
+            }
+        }
     // Drive straight a bit more - this is enough to line up our
     //wheels with the intersection.
 
     forward(motor1, motor2, 230);
     delay(200);///////
     brake(motor1, motor2);
-    qtra.readLineWhite(sensors1);
-    if (sensors1[1] < thr[1] || sensors1[2] < thr[2] || sensors1[3] < thr[3] || sensors1[4] < thr[4] || sensors1[5] < thr[5] || sensors1[6] < thr[6] )
-    {
-      found_straight = 1;
-    }
+    //qtra.readLineWhite(sensors1);
+    readLine();
+
+    // if (sensors1[1] < thr[1] || sensors1[2] < thr[2] || sensors1[3] < thr[3] || sensors1[4] < thr[4] || sensors1[5] < thr[5] || sensors1[6] < thr[6] )
+    // {
+    //   found_straight = 1;
+    // }
+    for(int i = 1; i <= 6; i++) {
+            if(isSensorOnLine(sensors1[i], thr[i])) {
+                found_straight = 1;
+                break;
+            }
+        }
 
     // Check for the ending spot.
-    if (sensors1[1] < thr[1] && sensors1[2] < thr[2] && sensors1[3] < thr[3] && sensors1[4] < thr[4] && sensors1[5] < thr[5] && sensors1[6] < thr[6])
-      break;
+    // if (sensors1[1] < thr[1] && sensors1[2] < thr[2] && sensors1[3] < thr[3] && sensors1[4] < thr[4] && sensors1[5] < thr[5] && sensors1[6] < thr[6])
+    //   break;
+    bool isEndpoint = true;
+        for(int i = 1; i <= 6; i++) {
+            if(!isSensorOnLine(sensors1[i], thr[i])) {
+                isEndpoint = false;
+                break;
+            }
+        }
+        if(isEndpoint) break;
+
 
     // According to rule we have to decided which turn has to be taken
     
@@ -361,7 +413,9 @@ void follow_Segment()
   {
     digitalWrite(led, LOW);
     // FOR BLACK LINE FOLLOWER JUST REPLACE White WITH Black
-    int position = qtra.readLineWhite(sensors1);   // Getting the present position of the bot
+    // int position = qtra.readLineWhite(sensors1);   // Getting the present position of the bot
+    int position= readLine();
+    
     int error =  3500 - position;
     int motorSpeed = kp * error + kd * (error - lastError);
     lastError = error;
@@ -369,27 +423,38 @@ void follow_Segment()
     Serial.println(error);
     int rightMotorSpeed = BaseSpeed - motorSpeed;
     int leftMotorSpeed = BaseSpeed + motorSpeed;
-    if (rightMotorSpeed > MaxSpeed ) rightMotorSpeed = MaxSpeed;
-    if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed;
-    if (rightMotorSpeed < 0)rightMotorSpeed = 0;
-    if (leftMotorSpeed < 0)leftMotorSpeed = 0;
+    // if (rightMotorSpeed > MaxSpeed ) rightMotorSpeed = MaxSpeed;
+    // if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed;
+    // if (rightMotorSpeed < 0)rightMotorSpeed = 0;
+    // if (leftMotorSpeed < 0)leftMotorSpeed = 0;
+     rightMotorSpeed = constrain(rightMotorSpeed, 0, maxSpeed);
+        leftMotorSpeed = constrain(leftMotorSpeed, 0, maxSpeed);
     Serial.println(rightMotorSpeed);
     Serial.println(leftMotorSpeed);
    
     motor1.drive(rightMotorSpeed);
     motor2.drive(leftMotorSpeed);
 
-    if ((sensors1[0] < thr[0]) || (sensors1[7] < thr[7]))
+   // if ((sensors1[0] < thr[0]) || (sensors1[7] < thr[7]))
+    if(isSensorOnLine(sensors1[0], thr[0])||isSensorOnLine(sensors1[7], thr[7]))
     {
       return ;
       // Found an intersection.
     }
-    else if (sensors1[1] > thr[1] && sensors1[2] > thr[2] && sensors1[3] > thr[3] && sensors1[4] > thr[4] && sensors1[5] > thr[5] && sensors1[6] > thr[6])
-    {
-      // There is no line visible ahead, and we didn't see any
-      // intersection. Must be a dead end.
-      return ;
+    // else if (sensors1[1] > thr[1] && sensors1[2] > thr[2] && sensors1[3] > thr[3] && sensors1[4] > thr[4] && sensors1[5] > thr[5] && sensors1[6] > thr[6])
+    // {
+    //   // There is no line visible ahead, and we didn't see any
+    //   // intersection. Must be a dead end.
+    //   return ;
+    // }
+    else if{
+    for(int i = 1; i <= 6; i++) {
+            if(!isSensorOnLine(sensors1[i], thr[i])) {
+                return;
+            }
+  }
     }
+}
   }
 }
 
@@ -404,48 +469,69 @@ void turn(char dir)
   {
     case'L':
       left(motor1, motor2, 400);
-      qtra.readLineWhite(sensors1);
-      while (sensors1[0] > thr[0])  ///change
-      {
-        line_position = qtra.readLineWhite(sensors1);    //Move left until left extreme sensor goes out of the white line comes on black
+
+      //qtra.readLineWhite(sensors1);
+      readLine();
+
+    //   while (sensors1[0] > thr[0])  //change
+    while (!isSensorOnLine(sensors1[0], thr[0])) {
+          //line_position = qtra.readLineWhite(sensors1);    //Move left until left extreme sensor goes out of the white line comes on black
+
+         line_position = readLine(); 
       }
       left(motor1, motor2, 400);
       qtra.readLineWhite(sensors1);
-      while (sensors1[0] < thr[0])
+    //   while (sensors1[0] < thr[0])
+
+     while (isSensorOnLine(sensors1[0], thr[0]))
       {
-        line_position = qtra.readLineWhite(sensors1);        // Again move left until it get's on white line
+        line_position = readLine();        // Again move left until it geton white line
+
       }
       follow_segment1();    // Fast pid after turn to align bot quickly on line
       brake(motor1, motor2);
       break;
     case'R':
       right(motor1, motor2, 400);
-      qtra.readLineWhite(sensors1);
-      while (sensors1[7] > thr[7])
+      //qtra.readLineWhite(sensors1);
+      readLine();
+      //while (sensors1[7] > thr[7])
+      while(!isSensorOnLine(sensors1[7],thr[7]))
       {
-        line_position = qtra.readLineWhite(sensors1);   //Move right until left extreme sensor goes out of the white line comes on black
+        //line_position = qtra.readLineWhite(sensors1);   //Move right until left extreme sensor goes out of the white line comes on black
+      line_position=readLine();
       }
       right(motor1, motor2, 400);
-      qtra.readLineWhite(sensors1);
-      while (sensors1[7] < thr[7])
+    //   qtra.readLineWhite(sensors1);
+    readLine();
+      while(isSensorOnLine(sensors1[7],thr[7]))
       {
-        line_position = qtra.readLineWhite(sensors1);         // Again move right until it get's on white line
+       // line_position = qtra.readLineWhite(sensors1);        
+        // Again move right until it get's on white line
+
+      line_position = readLine();
       }
       follow_segment1();      // Fast pid after turn to align a bot quickly on line
       brake(motor1, motor2);
       break;
     case'B':
       right(motor1, motor2, 400);
-      qtra.readLineWhite(sensors1);
-      while (sensors1[7] > thr[7])
+    //   qtra.readLineWhite(sensors1);
+    readLine();
+     // while (sensors1[7] > thr[7])
+     while (!isSensorOnLine(sensors1[7], thr[7]))
       {
-        line_position = qtra.readLineWhite(sensors1);          // Take u turn using right turn
+        // line_position = qtra.readLineWhite(sensors1);          // Take u turn using right turn
+      line_position=readLine();
       }
       right(motor1, motor2, 400);
-      qtra.readLineWhite(sensors1);
-      while (sensors1[7] < thr[7])
+      //qtra.readLineWhite(sensors1);
+      readLine();
+     // while (sensors1[7] < thr[7])
+     while (isSensorOnLine(sensors1[7], thr[7]))
       {
-        line_position = qtra.readLineWhite(sensors1);
+        //line_position = qtra.readLineWhite(sensors1);
+        line_position=readLine();
       }
       follow_segment3();
       brake(motor1, motor2);
@@ -464,16 +550,19 @@ void follow_segment1()
   int Kp = 1;
   int Kd = 10;
   for (int j = 0; j < 30; j++) {
-    int position = qtra.readLineWhite(sensors1);       // FOR BLACK LINE FOLLOWER JUST REPLACE White WITH Black
+    //int position = qtra.readLineWhite(sensors1);       // FOR BLACK LINE FOLLOWER JUST REPLACE White WITH Black
+    int position = readLine();
     int error =  3500 - position;
     int motorSpeed = Kp * error + Kd * (error - lastError);
     lastError = error;
     int rightMotorSpeed = BaseSpeed - motorSpeed;
     int leftMotorSpeed = BaseSpeed + motorSpeed;
-    if (rightMotorSpeed > MaxSpeed ) rightMotorSpeed = MaxSpeed;
-    if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed;
-    if (rightMotorSpeed < 0)rightMotorSpeed = 0;
-    if (leftMotorSpeed < 0)leftMotorSpeed = 0;
+    // if (rightMotorSpeed > MaxSpeed ) rightMotorSpeed = MaxSpeed;
+    // if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed;
+    // if (rightMotorSpeed < 0)rightMotorSpeed = 0;
+    // if (leftMotorSpeed < 0)leftMotorSpeed = 0;
+     rightMotorSpeed = constrain(rightMotorSpeed, 0, maxSpeed);
+        leftMotorSpeed = constrain(leftMotorSpeed, 0, maxSpeed);
     motor1.drive(rightMotorSpeed);
     motor2.drive(leftMotorSpeed);
     delay(1);
@@ -488,16 +577,19 @@ void follow_segment2()
   int baseSpeed = 90;
   int maxSpeed = 90;
   for (int j = 0; j < 70; j++) {
-    int position = qtra.readLineWhite(sensors1);       // FOR BLACK LINE FOLLOWER JUST REPLACE White WITH Black
-    int error =  3500 - position;
+    //int position = qtra.readLineWhite(sensors1);       // FOR BLACK LINE FOLLOWER JUST REPLACE White WITH Black
+int position = readLine();
+int error =  3500 - position;
     int motorSpeed = Kp * error + Kd * (error - lastError);
     lastError = error;
     int rightMotorSpeed = baseSpeed + motorSpeed;
     int leftMotorSpeed = baseSpeed - motorSpeed;
-    if (rightMotorSpeed > maxSpeed ) rightMotorSpeed = maxSpeed;
-    if (leftMotorSpeed > maxSpeed ) leftMotorSpeed = maxSpeed;
-    if (rightMotorSpeed < 0)rightMotorSpeed = 0;
-    if (leftMotorSpeed < 0)leftMotorSpeed = 0;
+    // if (rightMotorSpeed > maxSpeed ) rightMotorSpeed = maxSpeed;
+    // if (leftMotorSpeed > maxSpeed ) leftMotorSpeed = maxSpeed;
+    // if (rightMotorSpeed < 0)rightMotorSpeed = 0;
+    // if (leftMotorSpeed < 0)leftMotorSpeed = 0;
+     rightMotorSpeed = constrain(rightMotorSpeed, 0, maxSpeed);
+        leftMotorSpeed = constrain(leftMotorSpeed, 0, maxSpeed);
     motor1.drive(-rightMotorSpeed);
     motor2.drive(-leftMotorSpeed);
     delay(1);
@@ -510,16 +602,20 @@ void follow_segment3()
   int Kp = 1;
   int Kd = 10;
   for (int j = 0; j < 10; j++) {
-    int position = qtra.readLineWhite(sensors1);       // FOR BLACK LINE FOLLOWER JUST REPLACE White WITH Black
+    //int position = qtra.readLineWhite(sensors1);       // FOR BLACK LINE FOLLOWER JUST REPLACE White WITH Black
+    int position = readLine();
     int error = 3500 - position;
     int motorSpeed = Kp * error + Kd * (error - lastError);
     lastError = error;
     int rightMotorSpeed = BaseSpeed - motorSpeed;
     int leftMotorSpeed = BaseSpeed + motorSpeed;
-    if (rightMotorSpeed > MaxSpeed ) rightMotorSpeed = MaxSpeed;
-    if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed;
-    if (rightMotorSpeed < 0)rightMotorSpeed = 0;
-    if (leftMotorSpeed < 0)leftMotorSpeed = 0;
+    // if (rightMotorSpeed > MaxSpeed ) rightMotorSpeed = MaxSpeed;
+    // if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed;
+    // if (rightMotorSpeed < 0)rightMotorSpeed = 0;
+    // if (leftMotorSpeed < 0)leftMotorSpeed = 0;
+    rightMotorSpeed = constrain(rightMotorSpeed, 0, MaxSpeed);
+    leftMotorSpeed = constrain(leftMotorSpeed, 0, MaxSpeed);
+
     motor1.drive(rightMotorSpeed);
     motor2.drive(leftMotorSpeed);
     delay(1);
