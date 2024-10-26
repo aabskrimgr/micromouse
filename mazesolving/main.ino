@@ -48,6 +48,13 @@ Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
 Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
 QTRSensors qtra;
 
+// debouncing function
+bool debounce(int btn) {
+  static uint16_t state = 0; 
+  state = (state << 1) | digitalRead(btn) | 0xfe00; 
+  return (state == 0xff00); 
+}
+
 void setup() {
   // put your setup code here, to run once:
 
@@ -62,11 +69,18 @@ void setup() {
   pinMode(10,OUTPUT);
   pinMode(led, OUTPUT);
   digitalWrite(10,HIGH);
-   s1 = digitalRead(sw1);  //s1 for calibration
-  while (s1 == HIGH)
-  {
-    s1 = digitalRead(sw1);    
+
+
+  while(!debounce(sw1)){
+    debounce(sw1);
   }
+
+//    s1 = digitalRead(sw1);  //s1 for calibration
+//   while (s1 == HIGH)
+//   {
+//     s1 = digitalRead(sw1);    
+//   }
+
   digitalWrite(2,HIGH);
   delay(800);
   calibration();
@@ -74,32 +88,46 @@ void setup() {
 
   while (1)
   {
-    int s1 = digitalRead(sw1);
-    int s2 = digitalRead(sw2);
-    if (s1 == LOW)
-    {
-      digitalWrite(13, HIGH);
+    if(debounce(sw1)){
+    digitalWrite(13, HIGH);
       chr = 1;
-      break;                        // Here we have to choose the Rule which will follow by the bot
-                                    // S1 switch for LHS and s2 switch for RHS
-                                    // In LHS left, straight, right will be priority
-    }                               // In RHS right, straight, left will be priority
-    if (s2 == LOW)                  
-    {
-      digitalWrite(13, LOW);
+      break; 
+    }
+    
+    if(debounce(sw2)){
+        digitalWrite(13, LOW);
       chr = 2;
       break;
     }
+    // int s1 = digitalRead(sw1);
+    // int s2 = digitalRead(sw2);
+    // if (s1 == LOW)
+    // {
+    //   digitalWrite(13, HIGH);
+    //   chr = 1;
+    //   break;                        // Here we have to choose the Rule which will follow by the bot
+    //                                 // S1 switch for LHS and s2 switch for RHS
+    //                                 // In LHS left, straight, right will be priority
+    // }                               // In RHS right, straight, left will be priority
+    // if (s2 == LOW)                  
+    // {
+    //   digitalWrite(13, LOW);
+    //   chr = 2;
+    //   break;
+    // }
   }
 }
 
 void loop() {
   digitalWrite(2,LOW);           //s2 to start dary run
-    s2 = digitalRead(sw2);
-  while (s2 == HIGH)
-  {
-    s2 = digitalRead(sw2);    
+  while(!debounce(sw2)){
+    debounce(sw2);
   }
+//     s2 = digitalRead(sw2);
+//   while (s2 == HIGH)
+//   {
+//     s2 = digitalRead(sw2);    
+//   }
   delay(800);
   forward(motor1, motor2, 60);
   delay(40);
@@ -249,11 +277,15 @@ void maze()
   delay(4000);
   digitalWrite(led, LOW);
 
-  s2 = digitalRead(sw2);
-  while (s2 == HIGH)
-  {
-    s2 = digitalRead(sw2);     // Wait for pressing a switch
+  while(!debounce(sw2)){
+    debounce(sw2);
   }
+
+//   s2 = digitalRead(sw2);
+//   while (s2 == HIGH)
+//   {
+//     s2 = digitalRead(sw2);     // Wait for pressing a switch
+//   }
 
   delay(800);
   forward(motor1, motor2, 60);
