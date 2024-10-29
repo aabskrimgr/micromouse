@@ -1,4 +1,5 @@
 //library
+#include <Arduino.h>
 #include <SparkFun_TB6612.h>  
 #include <QTRSensors.h> 
 
@@ -8,12 +9,12 @@ unsigned int sensors1[8];
 int thr[8];
 
 //motor pins
-#define AIN1 4
-#define BIN1 6
-#define AIN2 5
-#define BIN2 7
-#define PWMA 3
-#define PWMB 9
+#define AIN1 6   //4
+#define BIN1 4   //6
+#define AIN2 7   //5
+#define BIN2 5   //7
+#define PWMA 9   //3
+#define PWMB 3   //9
 #define STBY 8
 const int offsetA = 1;
 const int offsetB = 1;
@@ -29,8 +30,8 @@ int last_pos = 3500;
 //control pins
 #define sw1 11
 #define sw2 12
-#define sw3 2
-#define led 8
+//#define sw3 2
+#define led 2
 int s1,s2;
 char dir;
 int chr = 0;
@@ -40,8 +41,8 @@ int num = 0;
 char path[100];
 int path_length = 0;
 
-Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
-Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
+Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, 1);
+Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, 1);
 QTRSensors qtra;
 
 // debouncing function
@@ -60,7 +61,7 @@ bool lineColor = false; // true - black and false - white
 
 // helper function to read line based on color selection
 int readLine(){
-    if(linecolor){
+    if(lineColor){
          return qtra.readLineBlack(sensors1);
     }
     else{
@@ -70,7 +71,7 @@ int readLine(){
 
 // helper function to check sensor threshold based on color
 bool isSensorOnLine(int sensorValue, int threshold) {
-    if(isBlackLine) {
+    if(lineColor) {
         return sensorValue > threshold;
     } else {
         return sensorValue < threshold;
@@ -93,13 +94,13 @@ void setup() {
   digitalWrite(10,HIGH);
 
   // Line color selection timeout
-  startTime = millis();
-  while ((millis()-startTime)<timeLimit){
-    if(bounce(sw3)){
-        lineColor=true;
-        break;
-    }
-  }
+  // startTime = millis();
+  // while ((millis()-startTime)<timeLimit){
+  //   if(bounce(sw3)){
+  //       lineColor=true;
+  //       break;
+  //   }
+  // }
 
   while(!debounce(sw1)){
     debounce(sw1);
@@ -312,8 +313,8 @@ void follow_Segment() {
     int rightMotorSpeed = BaseSpeed - motorSpeed;
     int leftMotorSpeed = BaseSpeed + motorSpeed;
     
-    rightMotorSpeed = constrain(rightMotorSpeed, 0, maxSpeed);
-    leftMotorSpeed = constrain(leftMotorSpeed, 0, maxSpeed);
+    rightMotorSpeed = constrain(rightMotorSpeed, 0, MaxSpeed);
+    leftMotorSpeed = constrain(leftMotorSpeed, 0, MaxSpeed);
     
     Serial.println(rightMotorSpeed);
     Serial.println(leftMotorSpeed);
@@ -414,8 +415,8 @@ void follow_segment1() {
     int rightMotorSpeed = BaseSpeed - motorSpeed;
     int leftMotorSpeed = BaseSpeed + motorSpeed;
     
-    rightMotorSpeed = constrain(rightMotorSpeed, 0, maxSpeed);
-    leftMotorSpeed = constrain(leftMotorSpeed, 0, maxSpeed);
+    rightMotorSpeed = constrain(rightMotorSpeed, 0, MaxSpeed);
+    leftMotorSpeed = constrain(leftMotorSpeed, 0, MaxSpeed);
     
     motor1.drive(rightMotorSpeed);
     motor2.drive(leftMotorSpeed);
@@ -439,8 +440,8 @@ void follow_segment2() {
     int rightMotorSpeed = baseSpeed + motorSpeed;
     int leftMotorSpeed = baseSpeed - motorSpeed;
     
-    rightMotorSpeed = constrain(rightMotorSpeed, 0, maxSpeed);
-    leftMotorSpeed = constrain(leftMotorSpeed, 0, maxSpeed);
+    rightMotorSpeed = constrain(rightMotorSpeed, 0, MaxSpeed);
+    leftMotorSpeed = constrain(leftMotorSpeed, 0, MaxSpeed);
     
     motor1.drive(-rightMotorSpeed);
     motor2.drive(-leftMotorSpeed);
